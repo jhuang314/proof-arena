@@ -1,5 +1,5 @@
 [package]
-name = "expander-sha256"
+name = "expander-sha256-opt"
 version = "0.0.1"
 edition = "2021"
 

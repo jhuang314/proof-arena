@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash 
 
 # execute me at the [proof-arena] directory
 
@@ -8,7 +8,7 @@ go mod -C problems/sha256_hash/SPJ tidy
 go build -C problems/sha256_hash/SPJ
 
 pushd $PWD && \
-cd problems/sha256_hash/expander-sha256 && \
+cd problems/sha256_hash/expander-sha256-opt && \
 RUSTFLAGS="-C target-cpu=native" cargo build --release && \
 popd
 
@@ -18,10 +18,10 @@ mkdir -p spj_output/sha256_hash
 # largestN = par_factor * N_hashes * 8
 # par_factor is the arg after the mode arg
 problems/sha256_hash/SPJ/SPJ -cpu 16 -largestN 4096 \
-  -memory 32 -time 12 \
-  -json "spj_output/sha256_hash/expander-sha256.json" \
-  -prover "problems/sha256_hash/expander-sha256/target/release/expander-sha256 prove 16 256" \
-  -verifier "problems/sha256_hash/expander-sha256/target/release/expander-sha256 verify 16 256"
+  -memory 32768 -time 1200 \
+  -json "spj_output/sha256_hash/expander-sha256-opt.json" \
+  -prover "problems/sha256_hash/expander-sha256-opt/target/release/expander-sha256-opt prove 16 16" \
+  -verifier "problems/sha256_hash/expander-sha256-opt/target/release/expander-sha256-opt verify 16 16"
 
 # Capture the exit status
 exit_status=$?

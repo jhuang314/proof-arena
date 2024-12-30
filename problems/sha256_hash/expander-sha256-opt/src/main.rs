@@ -1,7 +1,7 @@
 // migrated from: https://github.com/PolyhedraZK/ExpanderCompilerCollection/blob/939cccbe0ff25a3f7c9dc2129131be3124c63589/expander_compiler/tests/keccak_gf2_full.rs
 use arith::{Field, FieldSerde};
 use expander_compiler::frontend::*;
-use expander_sha256::*;
+use expander_sha256_opt::*;
 use rayon::prelude::*;
 use expander_rs::Proof;
 use internal::Serde;
@@ -77,6 +77,9 @@ fn compute_sha256<C: Config>(api: &mut API<C>, input: &Vec<Variable>) -> Vec<Var
     w[13] = input[416..448].to_vec();
     w[14] = input[448..480].to_vec();
     w[15] = input[480..512].to_vec();
+
+
+
     for i in 16..64 {
         let tmp = xor(api, rotate_right(&w[i - 15], 7), rotate_right(&w[i - 15], 18));
         let shft = shift_right(api, w[i - 15].clone(), 3);
@@ -173,7 +176,7 @@ fn prove(
     // STEP 1: SPJ sends you the pipe filepath that handles the input output communication
     // STEP 2: Output your prover name, proof system name, and algorithm name
     // Note the order here: send the prover name, algorithm name, and proof system name
-    write_string(out_pipe, "expander-sha256")?;
+    write_string(out_pipe, "expander-sha256-opt")?;
     write_string(out_pipe, "GKR")?;
     write_string(out_pipe, "Expander")?;
 
@@ -233,16 +236,33 @@ fn prove(
                         let output = hash.finalize();
                         outputs.extend_from_slice(&output);
                         for i in 0..64 {
-                            for j in 0..8 {
-                                assignment.input[k % N_HASHES][i * 8 + j] =
-                                    ((data[i] >> j) as u32 & 1).into();
-                            }
+//                            for j in 0..8 {
+//                                assignment.input[k % N_HASHES][i * 8 + j] =
+//                                    ((data[i] >> j) as u32 & 1).into();
+//                            }
+assignment.input[k % N_HASHES][i * 8 + 0] = ((data[i] >> 0) as u32 & 1).into();
+assignment.input[k % N_HASHES][i * 8 + 1] = ((data[i] >> 1) as u32 & 1).into();
+assignment.input[k % N_HASHES][i * 8 + 2] = ((data[i] >> 2) as u32 & 1).into();
+assignment.input[k % N_HASHES][i * 8 + 3] = ((data[i] >> 3) as u32 & 1).into();
+assignment.input[k % N_HASHES][i * 8 + 4] = ((data[i] >> 4) as u32 & 1).into();
+assignment.input[k % N_HASHES][i * 8 + 5] = ((data[i] >> 5) as u32 & 1).into();
+assignment.input[k % N_HASHES][i * 8 + 6] = ((data[i] >> 6) as u32 & 1).into();
+assignment.input[k % N_HASHES][i * 8 + 7] = ((data[i] >> 7) as u32 & 1).into();
                         }
+
                         for i in 0..32 {
-                            for j in 0..8 {
-                                assignment.output[k % N_HASHES][i * 8 + j] =
-                                    ((output[i] >> j) as u32 & 1).into();
-                            }
+//                            for j in 0..8 {
+//                                assignment.output[k % N_HASHES][i * 8 + j] =
+//                                    ((output[i] >> j) as u32 & 1).into();
+//                            }
+assignment.output[k % N_HASHES][i * 8 + 0] = ((output[i] >> 0) as u32 & 1).into();
+assignment.output[k % N_HASHES][i * 8 + 1] = ((output[i] >> 1) as u32 & 1).into();
+assignment.output[k % N_HASHES][i * 8 + 2] = ((output[i] >> 2) as u32 & 1).into();
+assignment.output[k % N_HASHES][i * 8 + 3] = ((output[i] >> 3) as u32 & 1).into();
+assignment.output[k % N_HASHES][i * 8 + 4] = ((output[i] >> 4) as u32 & 1).into();
+assignment.output[k % N_HASHES][i * 8 + 5] = ((output[i] >> 5) as u32 & 1).into();
+assignment.output[k % N_HASHES][i * 8 + 6] = ((output[i] >> 6) as u32 & 1).into();
+assignment.output[k % N_HASHES][i * 8 + 7] = ((output[i] >> 7) as u32 & 1).into();
                         }
                         if k % N_HASHES == N_HASHES - 1 {
                             assignments.push(assignment);
@@ -285,11 +305,24 @@ fn prove(
                         c.layers[0].input_vals = (0..witness[rep].num_inputs_per_witness)
                             .map(|i| {
                                 let mut t: u8 = 0;
+/*
                                 for j in 0..8 {
                                     t |= (witness[rep].values[j * witness[rep].num_inputs_per_witness + i].v
                                         as u8)
                                         << j;
+
                                 }
+*/
+
+t |= (witness[rep].values[0 * witness[rep].num_inputs_per_witness + i].v as u8) << 0;
+t |= (witness[rep].values[1 * witness[rep].num_inputs_per_witness + i].v as u8) << 1;
+t |= (witness[rep].values[2 * witness[rep].num_inputs_per_witness + i].v as u8) << 2;
+t |= (witness[rep].values[3 * witness[rep].num_inputs_per_witness + i].v as u8) << 3;
+t |= (witness[rep].values[4 * witness[rep].num_inputs_per_witness + i].v as u8) << 4;
+t |= (witness[rep].values[5 * witness[rep].num_inputs_per_witness + i].v as u8) << 5;
+t |= (witness[rep].values[6 * witness[rep].num_inputs_per_witness + i].v as u8) << 6;
+t |= (witness[rep].values[7 * witness[rep].num_inputs_per_witness + i].v as u8) << 7;
+
                                 arith::GF2x8 { v: t }
                             })
                             .collect();
