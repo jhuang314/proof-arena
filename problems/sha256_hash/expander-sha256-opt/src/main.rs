@@ -241,49 +241,17 @@ fn prove(
                         let output = hash.finalize();
                         outputs.extend_from_slice(&output);
                         for i in 0..64 {
-                            //                            for j in 0..8 {
-                            //                                assignment.input[k % N_HASHES][i * 8 + j] =
-                            //                                    ((data[i] >> j) as u32 & 1).into();
-                            //                            }
-                            assignment.input[k % N_HASHES][i * 8 + 0] =
-                                ((data[i] >> 0) as u32 & 1).into();
-                            assignment.input[k % N_HASHES][i * 8 + 1] =
-                                ((data[i] >> 1) as u32 & 1).into();
-                            assignment.input[k % N_HASHES][i * 8 + 2] =
-                                ((data[i] >> 2) as u32 & 1).into();
-                            assignment.input[k % N_HASHES][i * 8 + 3] =
-                                ((data[i] >> 3) as u32 & 1).into();
-                            assignment.input[k % N_HASHES][i * 8 + 4] =
-                                ((data[i] >> 4) as u32 & 1).into();
-                            assignment.input[k % N_HASHES][i * 8 + 5] =
-                                ((data[i] >> 5) as u32 & 1).into();
-                            assignment.input[k % N_HASHES][i * 8 + 6] =
-                                ((data[i] >> 6) as u32 & 1).into();
-                            assignment.input[k % N_HASHES][i * 8 + 7] =
-                                ((data[i] >> 7) as u32 & 1).into();
+                            for j in 0..8 {
+                                assignment.input[k % N_HASHES][i * 8 + j] =
+                                    ((data[i] >> j) as u32 & 1).into();
+                            }
                         }
 
                         for i in 0..32 {
-                            //                            for j in 0..8 {
-                            //                                assignment.output[k % N_HASHES][i * 8 + j] =
-                            //                                    ((output[i] >> j) as u32 & 1).into();
-                            //                            }
-                            assignment.output[k % N_HASHES][i * 8 + 0] =
-                                ((output[i] >> 0) as u32 & 1).into();
-                            assignment.output[k % N_HASHES][i * 8 + 1] =
-                                ((output[i] >> 1) as u32 & 1).into();
-                            assignment.output[k % N_HASHES][i * 8 + 2] =
-                                ((output[i] >> 2) as u32 & 1).into();
-                            assignment.output[k % N_HASHES][i * 8 + 3] =
-                                ((output[i] >> 3) as u32 & 1).into();
-                            assignment.output[k % N_HASHES][i * 8 + 4] =
-                                ((output[i] >> 4) as u32 & 1).into();
-                            assignment.output[k % N_HASHES][i * 8 + 5] =
-                                ((output[i] >> 5) as u32 & 1).into();
-                            assignment.output[k % N_HASHES][i * 8 + 6] =
-                                ((output[i] >> 6) as u32 & 1).into();
-                            assignment.output[k % N_HASHES][i * 8 + 7] =
-                                ((output[i] >> 7) as u32 & 1).into();
+                            for j in 0..8 {
+                                assignment.output[k % N_HASHES][i * 8 + j] =
+                                    ((output[i] >> j) as u32 & 1).into();
+                            }
                         }
                         if k % N_HASHES == N_HASHES - 1 {
                             assignments.push(assignment);
