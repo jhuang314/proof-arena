@@ -16,7 +16,7 @@ serde = { version = "1.0", default-features = false, features = [
 ] }
 rayon = "1.9"
 sha2 = "0.10.8"
-jemallocator = "0.5.4"
+mimalloc = { version = "0.1.43", default-features = false }
 
 [profile.release]
 rpath = false
