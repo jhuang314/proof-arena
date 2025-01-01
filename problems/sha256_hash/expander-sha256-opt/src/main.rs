@@ -1,16 +1,16 @@
 // migrated from: https://github.com/PolyhedraZK/ExpanderCompilerCollection/blob/939cccbe0ff25a3f7c9dc2129131be3124c63589/expander_compiler/tests/keccak_gf2_full.rs
 use arith::{Field, FieldSerde};
 use expander_compiler::frontend::*;
-use expander_sha256_opt::*;
-use rayon::prelude::*;
 use expander_rs::Proof;
+use expander_sha256_opt::*;
 use internal::Serde;
+use rayon::prelude::*;
+use sha2::{Digest, Sha256};
 use std::{
     fs::File,
     io::{BufReader, Cursor, Write},
     thread,
 };
-use sha2::{Sha256, Digest};
 
 declare_circuit!(SHA256Circuit {
     input: [[Variable; 64 * 8]; N_HASHES],
@@ -30,36 +30,30 @@ impl Define<GF2Config> for SHA256Circuit<Variable> {
 
 fn compute_sha256<C: Config>(api: &mut API<C>, input: &Vec<Variable>) -> Vec<Variable> {
     let h32: [u32; 8] = [
-        0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
-        0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19,
+        0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab,
+        0x5be0cd19,
     ];
 
-    let mut h: Vec<Vec<Variable>> = (0..8).map(|x| int2bit(api, h32[x])).collect(); 
+    let mut h: Vec<Vec<Variable>> = (0..8).map(|x| int2bit(api, h32[x])).collect();
 
     let k32: [u32; 64] = [
-        0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
-        0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
-        0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,
-        0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
-        0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc,
-        0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
-        0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7,
-        0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
-        0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13,
-        0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
-        0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3,
-        0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
-        0x19a4c116, 0x1e376c48, 0x2748774c, 0x34b0bcb5,
-        0x391c0cb3, 0x4ed8aa11, 0x5b9cca4f, 0x682e6ff3,
-        0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
-        0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2,
+        0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4,
+        0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe,
+        0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f,
+        0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7,
+        0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc,
+        0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b,
+        0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070, 0x19a4c116,
+        0x1e376c48, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa11, 0x5b9cca4f, 0x682e6ff3,
+        0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7,
+        0xc67178f2,
     ];
-//    let k: Vec<Vec<Variable>> = (0..64).map(|x| int2bit(api, k32[x])).collect(); 
+    //    let k: Vec<Vec<Variable>> = (0..64).map(|x| int2bit(api, k32[x])).collect();
 
     let mut w = vec![vec![api.constant(0); 32]; 64];
-//    for i in 0..16 {
-//        w[i] = input[(i * 32)..((i + 1) * 32) as usize].to_vec();
-//    }
+    //    for i in 0..16 {
+    //        w[i] = input[(i * 32)..((i + 1) * 32) as usize].to_vec();
+    //    }
     // Unrolling the first 16 iterations of the loop
     w[0] = input[0..32].to_vec();
     w[1] = input[32..64].to_vec();
@@ -78,13 +72,19 @@ fn compute_sha256<C: Config>(api: &mut API<C>, input: &Vec<Variable>) -> Vec<Var
     w[14] = input[448..480].to_vec();
     w[15] = input[480..512].to_vec();
 
-
-
     for i in 16..64 {
-        let tmp = xor(api, rotate_right(&w[i - 15], 7), rotate_right(&w[i - 15], 18));
+        let tmp = xor(
+            api,
+            rotate_right(&w[i - 15], 7),
+            rotate_right(&w[i - 15], 18),
+        );
         let shft = shift_right(api, w[i - 15].clone(), 3);
         let s0 = xor(api, tmp, shft);
-        let tmp = xor(api, rotate_right(&w[i - 2], 17), rotate_right(&w[i - 2], 19));
+        let tmp = xor(
+            api,
+            rotate_right(&w[i - 2], 17),
+            rotate_right(&w[i - 2], 19),
+        );
         let shft = shift_right(api, w[i - 2].clone(), 10);
         let s1 = xor(api, tmp, shft);
         let s0 = add(api, w[i - 16].clone(), s0);
@@ -113,7 +113,6 @@ fn compute_sha256<C: Config>(api: &mut API<C>, input: &Vec<Variable>) -> Vec<Var
         h[1] = h[0].clone();
         h[0] = add(api, s1, s0);
     }
-
 
     let mut result = add_const(api, h[0].clone(), h32[0].clone());
     for i in 1..8 {
@@ -208,7 +207,10 @@ fn prove(
         .collect::<Vec<_>>();
 
     // STEP 4: Output the Number of Keccak Instances
-    write_u64(out_pipe, 8 * N_HASHES as u64 * par_factor as u64 * repeat_factor as u64)?;
+    write_u64(
+        out_pipe,
+        8 * N_HASHES as u64 * par_factor as u64 * repeat_factor as u64,
+    )?;
 
     // STEP 5: Read Input Data
     println!("Start proving");
@@ -236,33 +238,49 @@ fn prove(
                         let output = hash.finalize();
                         outputs.extend_from_slice(&output);
                         for i in 0..64 {
-//                            for j in 0..8 {
-//                                assignment.input[k % N_HASHES][i * 8 + j] =
-//                                    ((data[i] >> j) as u32 & 1).into();
-//                            }
-assignment.input[k % N_HASHES][i * 8 + 0] = ((data[i] >> 0) as u32 & 1).into();
-assignment.input[k % N_HASHES][i * 8 + 1] = ((data[i] >> 1) as u32 & 1).into();
-assignment.input[k % N_HASHES][i * 8 + 2] = ((data[i] >> 2) as u32 & 1).into();
-assignment.input[k % N_HASHES][i * 8 + 3] = ((data[i] >> 3) as u32 & 1).into();
-assignment.input[k % N_HASHES][i * 8 + 4] = ((data[i] >> 4) as u32 & 1).into();
-assignment.input[k % N_HASHES][i * 8 + 5] = ((data[i] >> 5) as u32 & 1).into();
-assignment.input[k % N_HASHES][i * 8 + 6] = ((data[i] >> 6) as u32 & 1).into();
-assignment.input[k % N_HASHES][i * 8 + 7] = ((data[i] >> 7) as u32 & 1).into();
+                            //                            for j in 0..8 {
+                            //                                assignment.input[k % N_HASHES][i * 8 + j] =
+                            //                                    ((data[i] >> j) as u32 & 1).into();
+                            //                            }
+                            assignment.input[k % N_HASHES][i * 8 + 0] =
+                                ((data[i] >> 0) as u32 & 1).into();
+                            assignment.input[k % N_HASHES][i * 8 + 1] =
+                                ((data[i] >> 1) as u32 & 1).into();
+                            assignment.input[k % N_HASHES][i * 8 + 2] =
+                                ((data[i] >> 2) as u32 & 1).into();
+                            assignment.input[k % N_HASHES][i * 8 + 3] =
+                                ((data[i] >> 3) as u32 & 1).into();
+                            assignment.input[k % N_HASHES][i * 8 + 4] =
+                                ((data[i] >> 4) as u32 & 1).into();
+                            assignment.input[k % N_HASHES][i * 8 + 5] =
+                                ((data[i] >> 5) as u32 & 1).into();
+                            assignment.input[k % N_HASHES][i * 8 + 6] =
+                                ((data[i] >> 6) as u32 & 1).into();
+                            assignment.input[k % N_HASHES][i * 8 + 7] =
+                                ((data[i] >> 7) as u32 & 1).into();
                         }
 
                         for i in 0..32 {
-//                            for j in 0..8 {
-//                                assignment.output[k % N_HASHES][i * 8 + j] =
-//                                    ((output[i] >> j) as u32 & 1).into();
-//                            }
-assignment.output[k % N_HASHES][i * 8 + 0] = ((output[i] >> 0) as u32 & 1).into();
-assignment.output[k % N_HASHES][i * 8 + 1] = ((output[i] >> 1) as u32 & 1).into();
-assignment.output[k % N_HASHES][i * 8 + 2] = ((output[i] >> 2) as u32 & 1).into();
-assignment.output[k % N_HASHES][i * 8 + 3] = ((output[i] >> 3) as u32 & 1).into();
-assignment.output[k % N_HASHES][i * 8 + 4] = ((output[i] >> 4) as u32 & 1).into();
-assignment.output[k % N_HASHES][i * 8 + 5] = ((output[i] >> 5) as u32 & 1).into();
-assignment.output[k % N_HASHES][i * 8 + 6] = ((output[i] >> 6) as u32 & 1).into();
-assignment.output[k % N_HASHES][i * 8 + 7] = ((output[i] >> 7) as u32 & 1).into();
+                            //                            for j in 0..8 {
+                            //                                assignment.output[k % N_HASHES][i * 8 + j] =
+                            //                                    ((output[i] >> j) as u32 & 1).into();
+                            //                            }
+                            assignment.output[k % N_HASHES][i * 8 + 0] =
+                                ((output[i] >> 0) as u32 & 1).into();
+                            assignment.output[k % N_HASHES][i * 8 + 1] =
+                                ((output[i] >> 1) as u32 & 1).into();
+                            assignment.output[k % N_HASHES][i * 8 + 2] =
+                                ((output[i] >> 2) as u32 & 1).into();
+                            assignment.output[k % N_HASHES][i * 8 + 3] =
+                                ((output[i] >> 3) as u32 & 1).into();
+                            assignment.output[k % N_HASHES][i * 8 + 4] =
+                                ((output[i] >> 4) as u32 & 1).into();
+                            assignment.output[k % N_HASHES][i * 8 + 5] =
+                                ((output[i] >> 5) as u32 & 1).into();
+                            assignment.output[k % N_HASHES][i * 8 + 6] =
+                                ((output[i] >> 6) as u32 & 1).into();
+                            assignment.output[k % N_HASHES][i * 8 + 7] =
+                                ((output[i] >> 7) as u32 & 1).into();
                         }
                         if k % N_HASHES == N_HASHES - 1 {
                             assignments.push(assignment);
@@ -282,8 +300,7 @@ assignment.output[k % N_HASHES][i * 8 + 7] = ((output[i] >> 7) as u32 & 1).into(
         .map(|assignments| witness_solver.solve_witnesses(&assignments).unwrap())
         .collect::<Vec<_>>();
     // group witness by repeat factor witnesses per group
-    let all_witness_group = all_witness
-        .chunks(repeat_factor).collect::<Vec<_>>();
+    let all_witness_group = all_witness.chunks(repeat_factor).collect::<Vec<_>>();
     write_string(out_pipe, WITNESS_GENERATED_MSG)?;
 
     // STEP 8: Output the Proof
@@ -305,23 +322,13 @@ assignment.output[k % N_HASHES][i * 8 + 7] = ((output[i] >> 7) as u32 & 1).into(
                         c.layers[0].input_vals = (0..witness[rep].num_inputs_per_witness)
                             .map(|i| {
                                 let mut t: u8 = 0;
-/*
+
                                 for j in 0..8 {
-                                    t |= (witness[rep].values[j * witness[rep].num_inputs_per_witness + i].v
-                                        as u8)
+                                    t |= (witness[rep].values
+                                        [j * witness[rep].num_inputs_per_witness + i]
+                                        .v as u8)
                                         << j;
-
                                 }
-*/
-
-t |= (witness[rep].values[0 * witness[rep].num_inputs_per_witness + i].v as u8) << 0;
-t |= (witness[rep].values[1 * witness[rep].num_inputs_per_witness + i].v as u8) << 1;
-t |= (witness[rep].values[2 * witness[rep].num_inputs_per_witness + i].v as u8) << 2;
-t |= (witness[rep].values[3 * witness[rep].num_inputs_per_witness + i].v as u8) << 3;
-t |= (witness[rep].values[4 * witness[rep].num_inputs_per_witness + i].v as u8) << 4;
-t |= (witness[rep].values[5 * witness[rep].num_inputs_per_witness + i].v as u8) << 5;
-t |= (witness[rep].values[6 * witness[rep].num_inputs_per_witness + i].v as u8) << 6;
-t |= (witness[rep].values[7 * witness[rep].num_inputs_per_witness + i].v as u8) << 7;
 
                                 arith::GF2x8 { v: t }
                             })
@@ -351,18 +358,29 @@ t |= (witness[rep].values[7 * witness[rep].num_inputs_per_witness + i].v as u8) 
     all_proof_serialized[0..8].copy_from_slice(&(all_proof.len() as u64).to_le_bytes());
 
     // Use par_chunks_mut instead of for_each_with
-    all_proof_serialized[8..].par_chunks_mut(proof_len + 8).enumerate().for_each(|(i, chunk)| {
-        chunk[0..8].copy_from_slice(&(proof_len as u64).to_le_bytes());
-        chunk[8..].copy_from_slice(&all_proof[i]);
-    });
+    all_proof_serialized[8..]
+        .par_chunks_mut(proof_len + 8)
+        .enumerate()
+        .for_each(|(i, chunk)| {
+            chunk[0..8].copy_from_slice(&(proof_len as u64).to_le_bytes());
+            chunk[8..].copy_from_slice(&all_proof[i]);
+        });
     println!("Time epoch 2 elapsed: {:?}", start_time_orig.elapsed());
     write_byte_array(out_pipe, &all_proof_serialized)?;
-    println!("Time epoch 2.1 elapsed: {:?}, pipe writes: {:?}", start_time_orig.elapsed(), all_proof_serialized.len());
+    println!(
+        "Time epoch 2.1 elapsed: {:?}, pipe writes: {:?}",
+        start_time_orig.elapsed(),
+        all_proof_serialized.len()
+    );
 
     let vk = vec![];
     println!("Time epoch 3 elapsed: {:?}", start_time_orig.elapsed());
     write_byte_array(out_pipe, &vk)?;
-    println!("Time epoch 3.1 elapsed: {:?}, pipe writes: {:?}", start_time_orig.elapsed(), vk.len());
+    println!(
+        "Time epoch 3.1 elapsed: {:?}, pipe writes: {:?}",
+        start_time_orig.elapsed(),
+        vk.len()
+    );
 
     let mut all_pis_serialized = vec![];
     all_pis_serialized.extend_from_slice(&(all_pis.len() as u64).to_le_bytes());
@@ -372,7 +390,11 @@ t |= (witness[rep].values[7 * witness[rep].num_inputs_per_witness + i].v as u8) 
     }
     println!("Time epoch 4 elapsed: {:?}", start_time_orig.elapsed());
     write_byte_array(out_pipe, &all_pis_serialized)?;
-    println!("Time epoch 4.1 elapsed: {:?}, pipe writes: {:?}", start_time_orig.elapsed(), all_pis_serialized.len());
+    println!(
+        "Time epoch 4.1 elapsed: {:?}, pipe writes: {:?}",
+        start_time_orig.elapsed(),
+        all_pis_serialized.len()
+    );
 
     out_pipe.flush()?;
     println!("all done");
@@ -442,7 +464,9 @@ fn verify(
                 let proof_length = full_proof.len() / repeat_factor;
                 assert!(full_proof.len() % repeat_factor == 0);
                 for i in 0..repeat_factor {
-                    let (proof, claimed_v) = load_proof_and_claimed_v(full_proof[i * proof_length..(i + 1) * proof_length].as_ref());
+                    let (proof, claimed_v) = load_proof_and_claimed_v(
+                        full_proof[i * proof_length..(i + 1) * proof_length].as_ref(),
+                    );
                     c.layers[0].input_vals = load_inputs(pis);
                     *result = v.verify(c, &claimed_v, &proof)
                 }

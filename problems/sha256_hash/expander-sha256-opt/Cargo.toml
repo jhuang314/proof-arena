@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 rand = "0.8.5"
-expander_compiler = { git = "https://github.com/PolyhedraZK/ExpanderCompilerCollection.git"}
+expander_compiler = { git = "https://github.com/PolyhedraZK/ExpanderCompilerCollection.git" }
 expander-rs = { git = "https://github.com/PolyhedraZK/Expander" }
 arith = { git = "https://github.com/PolyhedraZK/Expander" }
 serde = { version = "1.0", default-features = false, features = [
@@ -16,3 +16,12 @@ serde = { version = "1.0", default-features = false, features = [
 ] }
 rayon = "1.9"
 sha2 = "0.10.8"
+
+[profile.release]
+rpath = false
+debug-assertions = false
+opt-level = 3
+debug = false
+lto = true
+codegen-units = 1
+panic = "abort"
